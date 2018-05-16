@@ -52,7 +52,7 @@ cmap1 = colombi1_cmap
 # Global values
 Nside_map = 256
 Nside_ref = 8
-query_radius = np.deg2rad(10)
+query_radius = np.deg2rad(12)
 
 Npix_map = hp.nside2npix(Nside_map)
 Npix_ref = hp.nside2npix(Nside_ref)
@@ -71,6 +71,24 @@ def cross_corr(vec_arr, map1, map2):
     return foo/np.sqrt(bar*bar1)
 
 
+def regions_inspec(ipixarr, m1, m2, m3):
+
+    lat, lon = hp.pix2ang(Nside_ref, ipixarr, lonlat=True)
+
+    for ii in xrange(len(lat)):
+
+        name = "../plots/dust_Synch_gnomeview_r12/Cross_Corr_map_r12_dust-synchrotron_%d.png"%ii
+        hp.gnomview(m1, rot=(lon[ii], lat[ii]), xsize=2000, cmap=cmap1, flip="astro", unit=r'$\rho$', nest=False,)
+        plt.savefig(name, dpi=600, bbox_inches="tight")
+
+        name = "../plots/dust_Synch_gnomeview_r12/Cross_Corr_map_r12_dust_%d.png"%ii
+        hp.gnomview(m2, rot=(lon[ii], lat[ii]), xsize=2000, cmap=cmap1, flip="astro", title='%s'%'dust')
+        plt.savefig(name, dpi=600, bbox_inches="tight")
+
+        name = "../plots/dust_Synch_gnomeview_r12/Cross_Corr_map_r12_synchrotron_%d.png"%ii
+        hp.gnomview(m3, rot=(lon[ii], lat[ii]), xsize=2000, cmap=cmap1, flip="astro", title='%s'%'Synchrotron')
+        plt.savefig(name, dpi=600, bbox_inches="tight")
+
 
 def main(seq_name, ind):
 
@@ -80,6 +98,7 @@ def main(seq_name, ind):
     map_2 = hp.read_map(fits_filename)
 
     rho = np.zeros(hp.nside2npix(Nside_ref))
+    pixel_indx = np.arange(hp.nside2npix(Nside_ref))
 
     for ipix in xrange(hp.nside2npix(Nside_ref)):
         x, y, z =  hp.pix2vec(Nside_ref, ipix)
@@ -87,25 +106,26 @@ def main(seq_name, ind):
         rho[ipix] = cross_corr(vec, map_1, map_2)
 
 
-    indx = (rho < 0.9)
-    indx1 = (rho >= 0.9)
+    indx = (rho <= 0.9)
+    indx1 = (rho > 0.9)
     rho[indx]  = 0.0
     rho[indx1] = 1.0
 
-    titl = '%s-%s'%(seq_name[0], seq_name[1])
+    pixel_indx = pixel_indx[indx1]
+    regions_inspec(pixel_indx, rho, map_1, map_2)
 
-    name  = "../results/rho_Nside_ref8-map256_"+titl+".fits"
-    print name
-    hp.write_map(name, rho, overwrite=True)
+#    titl = '%s-%s'%(seq_name[0], seq_name[1])
 
-    dpi1 = 800
-    fig = plt.figure(ind+1, figsize=(8, 6))
-    hp.mollview(rho, fig=fig.number, xsize=2000, unit=r'$\rho$', nest=False, title =titl, cmap=cmap1)
-    hp.graticule()
-    name = "../plots/Cross_Corr_map_"+titl
-    plt.savefig(name, dpi=dpi1, bbox_inches="tight")
+#    name  = "../results/rho_Nside_ref8-map256_"+titl+".fits"
+#    print name
+#    hp.write_map(name, rho, overwrite=True)
 
-#    plt.show()
+#    dpi1 = 800
+#    fig = plt.figure(ind+1, figsize=(8, 6))
+#    hp.mollview(rho, fig=fig.number, xsize=2000, unit=r'$\rho$', nest=False, title =titl, cmap=cmap1)
+#    hp.graticule()
+#    name = "../plots/Cross_Corr_map_r12"+titl
+#    plt.savefig(name, dpi=dpi1, bbox_inches="tight")
 
 
 if __name__ == "__main__":
@@ -116,7 +136,7 @@ if __name__ == "__main__":
     print "and 10 degree angular scales change the paramteres for\n"
     print "differnt Nside and angular patch inside the code."
 
-    for i in xrange(6):
+    for i in xrange(1):
         print "Enter first map name"
         name1 = raw_input("")
         print "Enter second map name"
