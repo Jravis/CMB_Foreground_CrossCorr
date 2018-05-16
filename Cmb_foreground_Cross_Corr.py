@@ -73,24 +73,28 @@ def cross_corr(vec_arr, map1, map2):
 
 def regions_inspec(ipixarr, m1, m2, m3):
 
-    lat, lon = hp.pix2ang(Nside_ref, ipixarr, lonlat=True)
+    lat, lon = hp.pix2ang(Nside_ref, ipixarr, lonlat=False)
+    lat = np.rad2deg(lat)
+    lon = np.rad2deg(lon)
 
     for ii in xrange(len(lat)):
-
         name = "../plots/dust_Synch_gnomeview_r12/Cross_Corr_map_r12_dust-synchrotron_%d.png"%ii
-        hp.gnomview(m1, rot=(lon[ii], lat[ii]), xsize=2000, cmap=cmap1, flip="astro", unit=r'$\rho$', nest=False,)
+        hp.gnomview(m1, rot=(lon[ii], lat[ii]), xsize=1600, cmap=cmap1, flip="astro", unit=r'$\rho$', nest=False,)
         plt.savefig(name, dpi=600, bbox_inches="tight")
+        plt.close()
 
         name = "../plots/dust_Synch_gnomeview_r12/Cross_Corr_map_r12_dust_%d.png"%ii
-        hp.gnomview(m2, rot=(lon[ii], lat[ii]), xsize=2000, cmap=cmap1, flip="astro", title='%s'%'dust')
+        hp.gnomview(m2, rot=(lon[ii], lat[ii]), xsize=1600, cmap=cmap1, flip="astro", title='%s'%'dust')
         plt.savefig(name, dpi=600, bbox_inches="tight")
+        plt.close()
 
         name = "../plots/dust_Synch_gnomeview_r12/Cross_Corr_map_r12_synchrotron_%d.png"%ii
-        hp.gnomview(m3, rot=(lon[ii], lat[ii]), xsize=2000, cmap=cmap1, flip="astro", title='%s'%'Synchrotron')
+        hp.gnomview(m3, rot=(lon[ii], lat[ii]), xsize=1600, cmap=cmap1, flip="astro", title='%s'%'Synchrotron')
         plt.savefig(name, dpi=600, bbox_inches="tight")
+        plt.close()
 
 
-def main(seq_name, ind):
+def main(seq_name, ind, masking):
 
     fits_filename = "../CMB_foreground_map/COM_CompMap_%s-commander_0256_R2.00.fits" % seq_name[0]
     map_1 = hp.read_map(fits_filename)
@@ -105,27 +109,38 @@ def main(seq_name, ind):
         vec = [x, y, z]
         rho[ipix] = cross_corr(vec, map_1, map_2)
 
+    if masking == True:
 
-    indx = (rho <= 0.9)
-    indx1 = (rho > 0.9)
+        "Enter minmum galctic cut latitude "
+        min_lat = float(raw_input(""))
+        "Enter maximum galctic cut latitude "
+        max_lat = float(raw_input(""))
+        lat, lon = hp.pix2ang(Nside_ref, pixel_indx, lonlat=False)
+        gal_mask = (np.rad2deg(lat)>=min_lat)*(np.rad2deg(lat)<=max_lat)
+        rho[gal_mask]=0.0
+
+    indx = (rho <= 0.96)
+    indx1 = (rho > 0.96)
     rho[indx]  = 0.0
     rho[indx1] = 1.0
 
     pixel_indx = pixel_indx[indx1]
+    print len(pixel_indx)
+
     regions_inspec(pixel_indx, rho, map_1, map_2)
 
-#    titl = '%s-%s'%(seq_name[0], seq_name[1])
+    titl = '%s-%s'%(seq_name[0], seq_name[1])
 
-#    name  = "../results/rho_Nside_ref8-map256_"+titl+".fits"
-#    print name
-#    hp.write_map(name, rho, overwrite=True)
-
-#    dpi1 = 800
-#    fig = plt.figure(ind+1, figsize=(8, 6))
-#    hp.mollview(rho, fig=fig.number, xsize=2000, unit=r'$\rho$', nest=False, title =titl, cmap=cmap1)
-#    hp.graticule()
-#    name = "../plots/Cross_Corr_map_r12"+titl
-#    plt.savefig(name, dpi=dpi1, bbox_inches="tight")
+    name  = "../results/rho_Nside_ref8-map256_"+titl+".fits"
+    print name
+    hp.write_map(name, rho, overwrite=True)
+    dpi1 = 800
+    fig = plt.figure(ind+1, figsize=(8, 6))
+    hp.mollview(rho, fig=fig.number, xsize=2000, unit=r'$\rho$', nest=False, title =titl, cmap=cmap1)
+    hp.graticule()
+    plt.show()
+    name = "../plots/Cross_Corr_map_r12"+titl
+    plt.savefig(name, dpi=dpi1, bbox_inches="tight")
 
 
 if __name__ == "__main__":
@@ -144,7 +159,7 @@ if __name__ == "__main__":
 
         seq = [name1, name2]
 
-        main(seq, i)
+        main(seq, i, False)
 
 
 
