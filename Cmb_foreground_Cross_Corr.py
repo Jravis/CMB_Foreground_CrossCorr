@@ -40,8 +40,9 @@ import healpy as hp
 #from scipy import special
 import matplotlib.pyplot as plt
 from matplotlib.colors import ListedColormap
-#import matplotlib
+import matplotlib as mpl
 #matplotlib.use("agg")
+mpl.rcParams['axes.linewidth'] = 3.0 #set the value globally
 colombi1_cmap = ListedColormap(np.loadtxt("../Planck_Parchment_RGB.txt")/255.)
 colombi1_cmap.set_bad("gray") # color of missing pixels
 colombi1_cmap.set_under("white") # color of background, necessary if you want to use
@@ -69,30 +70,61 @@ def cross_corr(vec_arr, map1, map2):
     bar = np.sum(T2*T2)
     bar1 = np.sum(T1*T1)
     return foo/np.sqrt(bar*bar1)
+plt.style.use("classic")
+
+def T_T_Corr(vec_arr, map1, map2, count):
+
+    pix_indx_arr = hp.query_disc(Nside_map, vec_arr, query_radius)
+    T1 = map1[pix_indx_arr]
+    T2 = map2[pix_indx_arr]
+
+    T1 = T1-np.mean(T1)
+    T2 = T1-np.mean(T2)
 
 
-def regions_inspec(ipixarr, m1, m2, m3):
+    #plt.gca().get_frame().set_linewidth(2)
 
-    lat, lon = hp.pix2ang(Nside_ref, ipixarr, lonlat=False)
+#    ax.spines['top'].set_visible(False)
+#    ax.spines['right'].set_visible(False)
+#    ax.spines['bottom'].set_linewidth(0.5)
+#    ax.spines['left'].set_linewidth(0.5)
+
+
+    lat, lon = hp.vec2ang(vec_arr, lonlat=False)
+
     lat = np.rad2deg(lat)
     lon = np.rad2deg(lon)
 
-    for ii in xrange(len(lat)):
-        name = "../plots/dust_Synch_gnomeview_r12/Cross_Corr_map_r12_dust-synchrotron_%d.png"%ii
-        hp.gnomview(m1, rot=(lon[ii], lat[ii]), xsize=1600, cmap=cmap1, flip="astro", unit=r'$\rho$', nest=False,)
-        plt.savefig(name, dpi=600, bbox_inches="tight")
-        plt.close()
+    bool_arr = np.ones(hp.nside2npix(256), dtype=bool)
+    for ind in pix_indx_arr:
+        bool_arr[ind]=False
 
-        name = "../plots/dust_Synch_gnomeview_r12/Cross_Corr_map_r12_dust_%d.png"%ii
-        hp.gnomview(m2, rot=(lon[ii], lat[ii]), xsize=1600, cmap=cmap1, flip="astro", title='%s'%'dust')
-        plt.savefig(name, dpi=600, bbox_inches="tight")
-        plt.close()
+    map1[bool_arr] =  hp.UNSEEN
+    map2[bool_arr] =  hp.UNSEEN
+    map1 = np.ma.masked_values(map1, value=-1.6375e+30)
+    map2 = np.ma.masked_values(map2, value=-1.6375e+30)
 
-        name = "../plots/dust_Synch_gnomeview_r12/Cross_Corr_map_r12_synchrotron_%d.png"%ii
-        hp.gnomview(m3, rot=(lon[ii], lat[ii]), xsize=1600, cmap=cmap1, flip="astro", title='%s'%'Synchrotron')
-        plt.savefig(name, dpi=600, bbox_inches="tight")
-        plt.close()
+    name = "../plots/dust_Synch_gnomeview_r12/Cross_Corr_gnom_map_r12_dust-Synchrotron_%d.png" % count
 
+
+    fig_size_inch = 10, 10
+    fig = plt.figure(2, figsize=fig_size_inch)
+    hp.gnomview(map1, fig=fig.number, rot=(lon, 90.-lat), xsize=1600, cmap=cmap1, flip="astro", unit=r'$T_{dust}$', nest=False,
+               title='Dust', sub=(2, 2, 1))
+    hp.gnomview(map2, fig=fig.number, rot=(lon, 90-lat), xsize=1600, cmap=cmap1, flip="astro", unit=r'$T_{Sync}$', nest=False,
+               title='Synchrotron', sub=(2, 2, 2))
+    plt.subplot(2, 2, 3)
+    plt.plot(T1, T2, mec='g', mew=2, mfc='none', marker='.', ms=6, linestyle='None')
+
+    plt.minorticks_on()
+    plt.tick_params(axis='both', which='minor', length=5, width=2, labelsize=14)
+    plt.tick_params(axis='both', which='major', length=8, width=2, labelsize=14)
+    plt.xlabel(r"$\delta T_{d}$", fontsize=18, fontweight='bold', fontstyle='oblique')
+    plt.ylabel(r"$\delta T_{Sync}$", fontsize=18, fontweight='bold', fontstyle='oblique')
+    plt.savefig(name, dpi=800, bbox_inches="tight")
+    #plt.show()
+    plt.close()
+    del bool_arr
 
 def main(seq_name, ind, masking):
 
@@ -106,7 +138,7 @@ def main(seq_name, ind, masking):
 
     for ipix in xrange(hp.nside2npix(Nside_ref)):
         x, y, z =  hp.pix2vec(Nside_ref, ipix)
-        vec = [x, y, z]
+        vec = np.array([x, y, z])
         rho[ipix] = cross_corr(vec, map_1, map_2)
 
     if masking == True:
@@ -125,23 +157,31 @@ def main(seq_name, ind, masking):
     rho[indx1] = 1.0
 
     pixel_indx = pixel_indx[indx1]
-    print len(pixel_indx)
 
-    regions_inspec(pixel_indx, rho, map_1, map_2)
+    icount = 1
+    for ipix in xrange(len(pixel_indx)):
+        fits_filename = "../CMB_foreground_map/COM_CompMap_%s-commander_0256_R2.00.fits" % seq_name[0]
+        map_1 = hp.read_map(fits_filename, verbose=False)
+        fits_filename = "../CMB_foreground_map/COM_CompMap_%s-commander_0256_R2.00.fits" % seq_name[1]
+        map_2 = hp.read_map(fits_filename, verbose=False)
+        x, y, z =  hp.pix2vec(Nside_ref, pixel_indx[ipix])
+        vec = np.array([x, y, z])
+        T_T_Corr(vec, map_1, map_2, icount)
+        icount+=1
+        del vec
 
-    titl = '%s-%s'%(seq_name[0], seq_name[1])
+ #   titl = '%s-%s'%(seq_name[0], seq_name[1])
 
-    name  = "../results/rho_Nside_ref8-map256_"+titl+".fits"
-    print name
-    hp.write_map(name, rho, overwrite=True)
-    dpi1 = 800
-    fig = plt.figure(ind+1, figsize=(8, 6))
-    hp.mollview(rho, fig=fig.number, xsize=2000, unit=r'$\rho$', nest=False, title =titl, cmap=cmap1)
-    hp.graticule()
-    plt.show()
-    name = "../plots/Cross_Corr_map_r12"+titl
-    plt.savefig(name, dpi=dpi1, bbox_inches="tight")
-
+ #   name  = "../results/rho_Nside_ref8-map256_"+titl+".fits"
+ #   print name
+  #  hp.write_map(name, rho, overwrite=True)
+  #  dpi1 = 800
+  #  fig = plt.figure(ind+1, figsize=(8, 6))
+ #   hp.mollview(rho, fig=fig.number, xsize=2000, unit=r'$\rho$', nest=False, title =titl, cmap=cmap1)
+ #   hp.graticule()
+#    name = "../plots/Cross_Corr_map_r12"+titl
+#    plt.savefig(name, dpi=dpi1, bbox_inches="tight")
+#    plt.show()
 
 if __name__ == "__main__":
 
