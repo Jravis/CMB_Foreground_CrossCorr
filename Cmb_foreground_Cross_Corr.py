@@ -41,6 +41,7 @@ import healpy as hp
 import matplotlib.pyplot as plt
 from matplotlib.colors import ListedColormap
 import matplotlib as mpl
+import scipy.stats
 #matplotlib.use("agg")
 mpl.rcParams['axes.linewidth'] = 3.0 #set the value globally
 colombi1_cmap = ListedColormap(np.loadtxt("../Planck_Parchment_RGB.txt")/255.)
@@ -53,7 +54,7 @@ cmap1 = colombi1_cmap
 # Global values
 Nside_map = 256
 Nside_ref = 8
-query_radius = np.deg2rad(12)
+query_radius = np.deg2rad(5)
 
 Npix_map = hp.nside2npix(Nside_map)
 Npix_ref = hp.nside2npix(Nside_ref)
@@ -66,43 +67,42 @@ def cross_corr(vec_arr, map1, map2):
     T1 = map1[pix_indx_arr]
     T2 = map2[pix_indx_arr]
 
-    foo = np.sum(T1*T2)
-    bar = np.sum(T2*T2)
-    bar1 = np.sum(T1*T1)
+    foo = np.sum( (T1-np.mean(T1)) * (T2-np.mean(T2)) )
+    bar = np.sum( (T2-np.mean(T2)) * (T2-np.mean(T2)) )
+    bar1 = np.sum( (T1-np.mean(T1)) * (T1-np.mean(T1)) )
     return foo/np.sqrt(bar*bar1)
+
+
 plt.style.use("classic")
 
-def T_T_Corr(vec_arr, map1, map2, count):
+def T_T_Corr(vec_arr1, map1, map2, count):
 
-    pix_indx_arr = hp.query_disc(Nside_map, vec_arr, query_radius)
-    T1 = map1[pix_indx_arr]
-    T2 = map2[pix_indx_arr]
+    pix_indx_arr1 = hp.query_disc(Nside_map, vec_arr1, query_radius)
+    T1 = map1[pix_indx_arr1]
+    T2 = map2[pix_indx_arr1]
 
     T1 = T1-np.mean(T1)
-    T2 = T1-np.mean(T2)
+    T2 = T2-np.mean(T2)
 
+    print "Pearson Coeff"
+#    print np.corrcoef(T1, T2)
+    print scipy.stats.pearsonr(T1, T2)
+#    print T2/T1
 
-    #plt.gca().get_frame().set_linewidth(2)
-
-#    ax.spines['top'].set_visible(False)
-#    ax.spines['right'].set_visible(False)
-#    ax.spines['bottom'].set_linewidth(0.5)
-#    ax.spines['left'].set_linewidth(0.5)
-
-
-    lat, lon = hp.vec2ang(vec_arr, lonlat=False)
+    lat, lon = hp.vec2ang(vec_arr1, lonlat=False)
 
     lat = np.rad2deg(lat)
     lon = np.rad2deg(lon)
 
     bool_arr = np.ones(hp.nside2npix(256), dtype=bool)
-    for ind in pix_indx_arr:
+    for ind in pix_indx_arr1:
         bool_arr[ind]=False
 
     map1[bool_arr] =  hp.UNSEEN
     map2[bool_arr] =  hp.UNSEEN
     map1 = np.ma.masked_values(map1, value=-1.6375e+30)
     map2 = np.ma.masked_values(map2, value=-1.6375e+30)
+
 
     name = "../plots/dust_Synch_gnomeview_r12/Cross_Corr_gnom_map_r12_dust-Synchrotron_%d.png" % count
 
@@ -114,7 +114,8 @@ def T_T_Corr(vec_arr, map1, map2, count):
     hp.gnomview(map2, fig=fig.number, rot=(lon, 90-lat), xsize=1600, cmap=cmap1, flip="astro", unit=r'$T_{Sync}$', nest=False,
                title='Synchrotron', sub=(2, 2, 2))
     plt.subplot(2, 2, 3)
-    plt.plot(T1, T2, mec='g', mew=2, mfc='none', marker='.', ms=6, linestyle='None')
+    #plt.plot(T1, T2, mec='g', mew=2, mfc='none', marker='.', ms=6, linestyle='None')
+    plt.plot(T1, T2, mec='m',marker='.', ms=3, linestyle='None')
 
     plt.minorticks_on()
     plt.tick_params(axis='both', which='minor', length=5, width=2, labelsize=14)
@@ -151,8 +152,8 @@ def main(seq_name, ind, masking):
         gal_mask = (np.rad2deg(lat)>=min_lat)*(np.rad2deg(lat)<=max_lat)
         rho[gal_mask]=0.0
 
-    indx = (rho <= 0.96)
-    indx1 = (rho > 0.96)
+    indx = (rho < 0.9)
+    indx1 = (rho >= 0.9)
     rho[indx]  = 0.0
     rho[indx1] = 1.0
 
@@ -170,18 +171,19 @@ def main(seq_name, ind, masking):
         icount+=1
         del vec
 
- #   titl = '%s-%s'%(seq_name[0], seq_name[1])
+    titl = '%s-%s'%(seq_name[0], seq_name[1])
 
- #   name  = "../results/rho_Nside_ref8-map256_"+titl+".fits"
- #   print name
-  #  hp.write_map(name, rho, overwrite=True)
-  #  dpi1 = 800
-  #  fig = plt.figure(ind+1, figsize=(8, 6))
- #   hp.mollview(rho, fig=fig.number, xsize=2000, unit=r'$\rho$', nest=False, title =titl, cmap=cmap1)
- #   hp.graticule()
-#    name = "../plots/Cross_Corr_map_r12"+titl
-#    plt.savefig(name, dpi=dpi1, bbox_inches="tight")
-#    plt.show()
+    name  = "../results/rho_Nside_ref8-map256_"+titl+".fits"
+    print name
+    hp.write_map(name, rho, overwrite=True)
+    dpi1 = 800
+    fig = plt.figure(ind+1, figsize=(8, 6))
+    hp.mollview(rho, fig=fig.number, xsize=2000, unit=r'$\rho$', nest=False, title =titl, cmap=cmap1)
+    hp.graticule()
+    #name = "../plots/Cross_Corr_map_r10"+titl
+    name = "../plots/rho_map_r5"+titl
+    plt.savefig(name, dpi=dpi1, bbox_inches="tight")
+    plt.show()
 
 if __name__ == "__main__":
 
