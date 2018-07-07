@@ -51,8 +51,6 @@ cmap1 = colombi1_cmap
 
 
 # Global values
-
-
 Nside_map = 256
 Nside_ref = 32
 query_radius = np.deg2rad(10)
@@ -68,9 +66,9 @@ def cross_corr(vec_arr, map1, map2):
     T1 = map1[pix_indx_arr]
     T2 = map2[pix_indx_arr]
     RCoeff, temp = scipy.stats.pearsonr(T1, T2)
-
     return RCoeff
 
+plt.style.use("classic")
 
 def T_T_Corr(vec_arr1, map1, map2, count):
 
@@ -81,9 +79,6 @@ def T_T_Corr(vec_arr1, map1, map2, count):
     T1 = T1-np.mean(T1)
     T2 = T2-np.mean(T2)
 
-    print "Pearson Coeff"
-#    print np.corrcoef(T1, T2)
-    print scipy.stats.pearsonr(T1, T2)
 
     lat, lon = hp.vec2ang(vec_arr1, lonlat=False)
 
@@ -149,9 +144,9 @@ def main(seq_name, masking):
     rho[indx]  = 0.0
     rho[indx1] = 1.0
 
-    """
     pixel_indx = pixel_indx[indx1]
     icount = 1
+
     for ipix in xrange(len(pixel_indx)):
 
         fits_filename = "../CMB_foreground_map/COM_CompMap_%s-commander_0256_R2.00.fits" % seq_name[0]
@@ -164,7 +159,6 @@ def main(seq_name, masking):
         T_T_Corr(vec, map_1, map_2, icount)
         icount+=1
         del vec
-    """
 
     titl = '%s-%s'%(seq_name[0], seq_name[1])
     #dpi1 = 800
@@ -173,6 +167,7 @@ def main(seq_name, masking):
     hp.graticule()
     #name = "../plots/dust_synch/rho_map_nside32_30degGalCut_cut0.6_r5"+titl+".png"
     #plt.savefig(name, dpi=dpi1, bbox_inches="tight")
+
     plt.show()
 
 if __name__ == "__main__":
