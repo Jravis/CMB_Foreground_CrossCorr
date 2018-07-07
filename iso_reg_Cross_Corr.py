@@ -208,23 +208,21 @@ def main(seq_name, masking):
 
     rho = np.zeros(hp.nside2npix(Nside_ref)) # Correlation Coefficient array
 
-    pixel_indx = np.arange(hp.nside2npix(Nside_ref)) # Nside_ref = 8 pixel index array
+    pixel_indx = np.arange(hp.nside2npix(Nside_ref)) # Nside_ref = 32 pixel index array
 
     for ipix in xrange(hp.nside2npix(Nside_ref)):
         x, y, z =  hp.pix2vec(Nside_ref, ipix)
         vec = np.array([x, y, z])
         rho[ipix] = cross_corr(vec, map_1, map_2) # Compute Pearson cross-correlation coefficient
 
-
     # Masking Galactic part
     if masking == True:
-
         min_lat = 60.0
         max_lat = 120.0
         lat, lon = hp.pix2ang(Nside_ref, pixel_indx, lonlat=False)
         gal_mask = (np.rad2deg(lat) >= min_lat) * (np.rad2deg(lat) <= max_lat)
         rho[gal_mask] = 0.0
-
+        lat, lon = hp.pix2ang(Nside_map, pixel_indx_map, lonlat=False)
 #===================================================================
 
     # picking up pixel with correlation greater than 0.6
@@ -233,12 +231,13 @@ def main(seq_name, masking):
     rho[indx]  = 0.0
     rho[indx1] = 1.0
 
-
-
     #plot regions with high correlation
     fig = plt.figure(1, figsize=(8, 6))
-    hp.mollview(rho, fig=fig.number, xsize=2000, unit=r'$\rho$', nest=False, cmap=cmap1)
+    hp.mollview(rho, fig=fig.number, xsize=2000, unit=r'$\rho$', nest=False, 
+                title='Pearson Correlation map', cmap=cmap1)
     hp.graticule()
+    plot_name = plot_Dirname+'rho_galmask_30deg_map_nside32_nu_GE_0.6.pdf'
+    plt.savefig(plot_name, dpi=600)
 
 
 #===================================================================
@@ -256,7 +255,6 @@ def main(seq_name, masking):
 #===================================================================
 
     #plotting region 
-
     fig = plt.figure(2, figsize=(8, 6))
     hp.mollview(region1, fig=fig.number, xsize=2000, unit=r'$\rho$', nest=False, cmap=cmap1)
     hp.graticule()
@@ -274,14 +272,13 @@ def main(seq_name, masking):
     map_1 = hp.read_map(fits_filename, verbose=False)
     fits_filename = "../CMB_foreground_map/COM_CompMap_%s-commander_0256_R2.00.fits" % seq_name[1]
     map_2 = hp.read_map(fits_filename, verbose=False)
-
+    
+    
 
     # Go back to foreground maps and take out correlated regions and also create binary mask
 
     T_T_Corr(pixel_indx, map_1, map_2)
 
-
-#    plt.show()
 
 if __name__ == "__main__":
 
