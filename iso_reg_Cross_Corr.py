@@ -58,7 +58,7 @@ query_radius = np.deg2rad(10)
 Npix_map = hp.nside2npix(Nside_map)
 Npix_ref = hp.nside2npix(Nside_ref)
 
-region_number = 2
+region_number = 10
 
 plot_Dirname= '/home/tolstoy/Documents/CMB_dust_sync_Cross_Corr/plots/regions/region_%d/'%(region_number)
 
@@ -131,6 +131,7 @@ def T_T_Corr(pixel_indx, map1, map2):
 #===============================================================================
 
     bmask = np.ones(hp.nside2npix(Nside_map), dtype=np.float64)
+    bmask_binary = np.ones(hp.nside2npix(Nside_map), dtype=np.float64)
     bool_arr = np.ones(hp.nside2npix(256), dtype=bool)
 
     for ind in pix_indx_arr1:
@@ -141,10 +142,11 @@ def T_T_Corr(pixel_indx, map1, map2):
 #    map1 = np.ma.masked_values(map1, value=-1.6375e+30)
 #    map2 = np.ma.masked_values(map2, value=-1.6375e+30)
 
-    bmask[bool_arr] = 0.0
+    bmask_binary[bool_arr] = 0.0
+    bmask[bool_arr] = hp.UNSEEN
 
     fig = plt.figure(4, figsize=(8, 6))
-    hp.mollview(bmask, fig=fig.number, xsize=2000, unit='', nest=False, cmap=cmap1, title='Binary mask')
+    hp.mollview(bmask_binary, fig=fig.number, xsize=2000, unit='', nest=False, cmap=cmap1, title='Binary mask')
     hp.graticule()
 
     plot_name = plot_Dirname+'region_%d_bmask_nside256.pdf'%region_number
@@ -152,9 +154,10 @@ def T_T_Corr(pixel_indx, map1, map2):
     
     map_name = map_Dirname + 'region_%d_BinaryMask_nside256.fits'%(region_number)
 
-    hp.write_map(map_name, bmask, overwrite=True)
+    hp.write_map(map_name, bmask_binary, overwrite=True)
 
 
+    """    
     bmask_apod = apodize_mask(bmask, 2.0) # 2degree
     map_name = map_Dirname + 'region_%d_Masked_dust_apod2deg_nside256.fits' % region_number
     hp.write_map(map_name, map1*bmask_apod, overwrite=True)
@@ -189,12 +192,11 @@ def T_T_Corr(pixel_indx, map1, map2):
     hp.mollview(map2*bmask_apod, fig=fig.number, xsize=2000, unit=r'$\rho$', nest=False, cmap=cmap1,
                 title='Synchrotron')
     hp.graticule()
-    
     plot_name = plot_Dirname+'region_%d_Synchrotron_apod_2deg.pdf'%region_number
     plt.savefig(plot_name)
-
-
-
+    """
+   
+    
 
 def main(seq_name, masking):
 
@@ -206,6 +208,7 @@ def main(seq_name, masking):
     fits_filename = "../CMB_foreground_map/COM_CompMap_%s-commander_0256_R2.00.fits" % seq_name[1]
     map_2 = hp.read_map(fits_filename)
 
+    rho_binary = np.zeros(hp.nside2npix(Nside_ref)) # Correlation Coefficient array
     rho = np.zeros(hp.nside2npix(Nside_ref)) # Correlation Coefficient array
 
     pixel_indx = np.arange(hp.nside2npix(Nside_ref)) # Nside_ref = 32 pixel index array
@@ -213,6 +216,7 @@ def main(seq_name, masking):
     for ipix in xrange(hp.nside2npix(Nside_ref)):
         x, y, z =  hp.pix2vec(Nside_ref, ipix)
         vec = np.array([x, y, z])
+        rho_binary[ipix] = cross_corr(vec, map_1, map_2) # Compute Pearson cross-correlation coefficient
         rho[ipix] = cross_corr(vec, map_1, map_2) # Compute Pearson cross-correlation coefficient
 
     # Masking Galactic part
@@ -221,19 +225,23 @@ def main(seq_name, masking):
         max_lat = 120.0
         lat, lon = hp.pix2ang(Nside_ref, pixel_indx, lonlat=False)
         gal_mask = (np.rad2deg(lat) >= min_lat) * (np.rad2deg(lat) <= max_lat)
+        rho_binary[gal_mask] = 0.0
         rho[gal_mask] = 0.0
-        lat, lon = hp.pix2ang(Nside_map, pixel_indx_map, lonlat=False)
+
+
 #===================================================================
 
     # picking up pixel with correlation greater than 0.6
     indx = (rho < 0.6)
     indx1 = (rho >= 0.6)
-    rho[indx]  = 0.0
-    rho[indx1] = 1.0
+    rho_binary[indx]  = 0.0
+    rho_binary[indx1] = 1.0
+
+
 
     #plot regions with high correlation
     fig = plt.figure(1, figsize=(8, 6))
-    hp.mollview(rho, fig=fig.number, xsize=2000, unit=r'$\rho$', nest=False, 
+    hp.mollview(rho_binary, fig=fig.number, xsize=2000, unit=r'$\rho$', nest=False, 
                 title='Pearson Correlation map', cmap=cmap1)
     hp.graticule()
     plot_name = plot_Dirname+'rho_galmask_30deg_map_nside32_nu_GE_0.6.pdf'
@@ -243,29 +251,48 @@ def main(seq_name, masking):
 #===================================================================
 # out of 11 regions picking up one
 #region 2
+
     lat, lon = hp.pix2ang(Nside_ref, pixel_indx, lonlat=False)
-    region1=rho
-    gal_mask = (np.rad2deg(lat) >= 60)
-    region1[gal_mask] = 0.0
-    gal_mask = (np.rad2deg(lon) > 195)
-    region1[gal_mask] = 0.0
-    gal_mask = (np.rad2deg(lon) < 148)
-    region1[gal_mask] = 0.0
+    region1_binary = rho_binary
+    
+    gal_mask = (np.rad2deg(lat) < 150)
+    region1_binary[gal_mask] = 0.0
+    rho[gal_mask] = hp.UNSEEN
+
+#    gal_mask = (np.rad2deg(lat) >= 150)
+#    region1_binary[gal_mask] = 0.0
+#    rho[gal_mask] = hp.UNSEEN
+
+    gal_mask = (np.rad2deg(lon) < 260)
+    region1_binary[gal_mask] = 0.0
+    rho[gal_mask] = hp.UNSEEN
+
+#    gal_mask = (np.rad2deg(lon) < 255)
+#    region1_binary[gal_mask] = 0.0
+#    rho[gal_mask] = hp.UNSEEN
+    gal_mask = (rho < 0.6)
+    rho[gal_mask] = hp.UNSEEN
+
 
 #===================================================================
 
     #plotting region 
     fig = plt.figure(2, figsize=(8, 6))
-    hp.mollview(region1, fig=fig.number, xsize=2000, unit=r'$\rho$', nest=False, cmap=cmap1)
+    hp.mollview(region1_binary, fig=fig.number, xsize=2000, unit=r'$\rho$', nest=False, cmap=cmap1)
     hp.graticule()
 
+    plot_name = plot_Dirname+'region_%d_nside32_nu_GE_0.6_binary.pdf'%region_number
+    plt.savefig(plot_name, dpi=200)
+
+    fig = plt.figure(3, figsize=(8, 6))
+    hp.mollview(hp.ma(rho), fig=fig.number, xsize=2000, unit=r'$\rho$', nest=False, cmap=cmap1)
+    hp.graticule()
     plot_name = plot_Dirname+'region_%d_nside32_nu_GE_0.6.pdf'%region_number
     plt.savefig(plot_name, dpi=200)
 
 
-    indx1 = (region1 == 1)
+    indx1 = (region1_binary == 1)
     pixel_indx = pixel_indx[indx1]
-
 
 
     fits_filename = "../CMB_foreground_map/COM_CompMap_%s-commander_0256_R2.00.fits" % seq_name[0]
@@ -277,7 +304,7 @@ def main(seq_name, masking):
 
     # Go back to foreground maps and take out correlated regions and also create binary mask
 
-    T_T_Corr(pixel_indx, map_1, map_2)
+    #T_T_Corr(pixel_indx, map_1, map_2)
 
 
 if __name__ == "__main__":
@@ -287,7 +314,7 @@ if __name__ == "__main__":
     seq = [name1, name2]
     main(seq, True)
 
-
+plt.show()
 
 
 
