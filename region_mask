@@ -13,8 +13,6 @@ theta max = 50deg
 ispice.ispice(map_Sync, cl_Sync, nlmax=3*Nside_map-1, weightfile1=bmask_apod,
               thetamax=50.,apodizesigma=1.15*50., apodizetype=1,beam1=60.,label="spice")
 
-
-
 #=========================================================
 
 region 2
@@ -130,6 +128,275 @@ region1[gal_mask] = 0.0
 #    region1[gal_mask] = 0.0
 gal_mask = (np.rad2deg(lon) < 260)
 region1[gal_mask] = 0.0
+
+
+
+
+
+#++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+
+
+#These are the masking for GNILC-Haslam cross-corr althought
+#there are more regions but I am restricting to 10 only.
+
+#++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+#region 1
+lat, lon = hp.pix2ang(Nside_ref, pixel_indx, lonlat=False)
+region1_binary = rho_binary
+    
+#    gal_mask = (np.rad2deg(lat) < 116)
+#    region1_binary[gal_mask] = 0.0
+#    rho[gal_mask] = hp.UNSEEN
+
+gal_mask = (np.rad2deg(lat) >= 60)
+region1_binary[gal_mask] = 0.0
+rho[gal_mask] = hp.UNSEEN
+
+gal_mask = (np.rad2deg(lon) > 62)
+region1_binary[gal_mask] = 0.0
+rho[gal_mask] = hp.UNSEEN
+
+gal_mask = (np.rad2deg(lon) < 29)
+region1_binary[gal_mask] = 0.0
+rho[gal_mask] = hp.UNSEEN
+
+
+gal_mask = (rho < 0.6)
+rho[gal_mask] = hp.UNSEEN
+
+
+
+
+#++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+#region 2
+
+
+
+lat, lon = hp.pix2ang(Nside_ref, pixel_indx, lonlat=False)
+region1_binary = rho_binary
+    
+#    gal_mask = (np.rad2deg(lat) < 116)
+#    region1_binary[gal_mask] = 0.0
+#    rho[gal_mask] = hp.UNSEEN
+
+gal_mask = (np.rad2deg(lat) >= 60)
+region1_binary[gal_mask] = 0.0
+rho[gal_mask] = hp.UNSEEN
+
+gal_mask = (np.rad2deg(lon) > 195)
+region1_binary[gal_mask] = 0.0
+rho[gal_mask] = hp.UNSEEN
+
+gal_mask = (np.rad2deg(lon) < 148)
+region1_binary[gal_mask] = 0.0
+rho[gal_mask] = hp.UNSEEN
+
+gal_mask = (rho < 0.6)
+rho[gal_mask] = hp.UNSEEN
+
+#++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+#region 3
+    lat, lon = hp.pix2ang(Nside_ref, pixel_indx, lonlat=False)
+    region1_binary = rho_binary
+    
+#    gal_mask = (np.rad2deg(lat) < 116)
+#    region1_binary[gal_mask] = 0.0
+#    rho[gal_mask] = hp.UNSEEN
+
+    gal_mask = (np.rad2deg(lat) >= 60)
+    region1_binary[gal_mask] = 0.0
+    rho[gal_mask] = hp.UNSEEN
+
+#    gal_mask = (np.rad2deg(lon) > 195)
+#    region1_binary[gal_mask] = 0.0
+#    rho[gal_mask] = hp.UNSEEN
+
+    gal_mask = (np.rad2deg(lon) < 330)
+    region1_binary[gal_mask] = 0.0
+    rho[gal_mask] = hp.UNSEEN
+
+    gal_mask = (rho < 0.6)
+    rho[gal_mask] = hp.UNSEEN
+
+#++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+#region 4
+
+    lat, lon = hp.pix2ang(Nside_ref, pixel_indx, lonlat=False)
+    region1_binary = rho_binary
+    
+#    gal_mask = (np.rad2deg(lat) < 116)
+#    region1_binary[gal_mask] = 0.0
+#    rho[gal_mask] = hp.UNSEEN
+
+    gal_mask = (np.rad2deg(lat) >= 60)
+    region1_binary[gal_mask] = 0.0
+    rho[gal_mask] = hp.UNSEEN
+
+    gal_mask = (np.rad2deg(lon) > 120)
+    region1_binary[gal_mask] = 0.0
+    rho[gal_mask] = hp.UNSEEN
+
+    gal_mask = (np.rad2deg(lon) < 88)
+    region1_binary[gal_mask] = 0.0
+    rho[gal_mask] = hp.UNSEEN
+
+    gal_mask = (rho < 0.6)
+    rho[gal_mask] = hp.UNSEEN
+
+#++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+#region 5
+
+    lat, lon = hp.pix2ang(Nside_ref, pixel_indx, lonlat=False)
+    region1_binary = rho_binary
+    
+    gal_mask = (np.rad2deg(lat) <= 120)
+    region1_binary[gal_mask] = 0.0
+    rho[gal_mask] = hp.UNSEEN
+
+#    gal_mask = (np.rad2deg(lat) >= 60)
+#    region1_binary[gal_mask] = 0.0
+#    rho[gal_mask] = hp.UNSEEN
+
+    gal_mask = (np.rad2deg(lon) > 170)
+    region1_binary[gal_mask] = 0.0
+    rho[gal_mask] = hp.UNSEEN
+
+    gal_mask = (np.rad2deg(lon) < 140)
+    region1_binary[gal_mask] = 0.0
+    rho[gal_mask] = hp.UNSEEN
+
+    gal_mask = (rho < 0.6)
+    rho[gal_mask] = hp.UNSEEN
+
+#++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+#region 6
+ lat, lon = hp.pix2ang(Nside_ref, pixel_indx, lonlat=False)
+    region1_binary = rho_binary
+    
+    gal_mask = (np.rad2deg(lat) <= 120)
+    region1_binary[gal_mask] = 0.0
+    rho[gal_mask] = hp.UNSEEN
+
+#    gal_mask = (np.rad2deg(lat) >= 60)
+#    region1_binary[gal_mask] = 0.0
+#    rho[gal_mask] = hp.UNSEEN
+
+    gal_mask = (np.rad2deg(lon) > 208)
+    region1_binary[gal_mask] = 0.0
+    rho[gal_mask] = hp.UNSEEN
+
+    gal_mask = (np.rad2deg(lon) < 170)
+    region1_binary[gal_mask] = 0.0
+    rho[gal_mask] = hp.UNSEEN
+
+    gal_mask = (rho < 0.6)
+    rho[gal_mask] = hp.UNSEEN
+
+
+#++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+#region 7
+lat, lon = hp.pix2ang(Nside_ref, pixel_indx, lonlat=False)
+region1_binary = rho_binary
+
+gal_mask = (np.rad2deg(lat) < 116)
+region1_binary[gal_mask] = 0.0
+rho[gal_mask] = hp.UNSEEN
+
+gal_mask = (np.rad2deg(lat) > 140)
+region1_binary[gal_mask] = 0.0
+rho[gal_mask] = hp.UNSEEN
+
+gal_mask = (np.rad2deg(lon) > 300)
+region1_binary[gal_mask] = 0.0
+rho[gal_mask] = hp.UNSEEN
+
+gal_mask = (np.rad2deg(lon) < 240)
+region1_binary[gal_mask] = 0.0
+rho[gal_mask] = hp.UNSEEN
+
+gal_mask = (rho < 0.6)
+rho[gal_mask] = hp.UNSEEN
+
+#++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+#region 8
+
+    lat, lon = hp.pix2ang(Nside_ref, pixel_indx, lonlat=False)
+    region1_binary = rho_binary
+    
+    gal_mask = (np.rad2deg(lat) <= 125)
+    region1_binary[gal_mask] = 0.0
+    rho[gal_mask] = hp.UNSEEN
+
+#    gal_mask = (np.rad2deg(lat) >= 60)
+#    region1_binary[gal_mask] = 0.0
+#    rho[gal_mask] = hp.UNSEEN
+
+    gal_mask = (np.rad2deg(lon) > 50)
+    region1_binary[gal_mask] = 0.0
+    rho[gal_mask] = hp.UNSEEN
+
+#    gal_mask = (np.rad2deg(lon) < 170)
+#    region1_binary[gal_mask] = 0.0
+#    rho[gal_mask] = hp.UNSEEN
+
+    gal_mask = (rho < 0.6)
+    rho[gal_mask] = hp.UNSEEN
+
+#++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+#region 9
+
+    lat, lon = hp.pix2ang(Nside_ref, pixel_indx, lonlat=False)
+    region1_binary = rho_binary
+    
+    gal_mask = (np.rad2deg(lat) < 118)
+    region1_binary[gal_mask] = 0.0
+    rho[gal_mask] = hp.UNSEEN
+
+#    gal_mask = (np.rad2deg(lat) >= 60)
+#    region1_binary[gal_mask] = 0.0
+#    rho[gal_mask] = hp.UNSEEN
+
+#    gal_mask = (np.rad2deg(lon) > 50)
+#    region1_binary[gal_mask] = 0.0
+#    rho[gal_mask] = hp.UNSEEN
+
+    gal_mask = (np.rad2deg(lon) < 305)
+    region1_binary[gal_mask] = 0.0
+    rho[gal_mask] = hp.UNSEEN
+
+    gal_mask = (rho < 0.6)
+    rho[gal_mask] = hp.UNSEEN
+
+#++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+#region 10
+
+    lat, lon = hp.pix2ang(Nside_ref, pixel_indx, lonlat=False)
+    region1_binary = rho_binary
+    
+    gal_mask = (np.rad2deg(lat) < 140)
+    region1_binary[gal_mask] = 0.0
+    rho[gal_mask] = hp.UNSEEN
+
+#    gal_mask = (np.rad2deg(lat) >= 60)
+#    region1_binary[gal_mask] = 0.0
+#    rho[gal_mask] = hp.UNSEEN
+
+    gal_mask = (np.rad2deg(lon) > 300)
+    region1_binary[gal_mask] = 0.0
+    rho[gal_mask] = hp.UNSEEN
+
+    gal_mask = (np.rad2deg(lon) < 230)
+    region1_binary[gal_mask] = 0.0
+    rho[gal_mask] = hp.UNSEEN
+
+    gal_mask = (rho < 0.6)
+    rho[gal_mask] = hp.UNSEEN
+
+
+
+
+
 
 
 

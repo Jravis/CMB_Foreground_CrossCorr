@@ -56,22 +56,28 @@ cmap1 = colombi1_cmap
 
 Nside_map = 256
 Nside_ref = 32
-query_radius = np.deg2rad(10)
+
+
+print "Enter which query radius you want (degrees)"
+q_rad = float(raw_input(""))
+print q_rad
+query_radius = np.deg2rad(q_rad)
 Npix_map = hp.nside2npix(Nside_map)
 Npix_ref = hp.nside2npix(Nside_ref)
 
-region_number = 10
+region_number = 7
 
-plot_Dirname= '/home/tolstoy/Documents/CMB_dust_sync_Cross_Corr/plots/regions/region_%d/'%(region_number)
-#plot_Dirname= '/home/tolstoy/Documents/CMB_dust_sync_Cross_Corr/plots/'
+#plot_Dirname= '/home/tolstoy/Documents/CMB_dust_sync_Cross_Corr/plots/regions/region_%d/'%(region_number)
+plot_Dirname= '/home/tolstoy/Documents/CMB_dust_sync_Cross_Corr/plots/'
 
 #map_Dirname = '/home/tolstoy/Documents/CMB_dust_sync_Cross_Corr/results/regions/region_%d/'%(region_number)
-map_Dirname = '/home/tolstoy/Documents/CMB_dust_sync_Cross_Corr/results/regions/'
+map_Dirname = '/home/tolstoy/Documents/CMB_dust_sync_Cross_Corr/results/regions/GNILC_Binary_mask'
 
 plt.style.use("classic")
 
 
 #========================================================
+
 def apodize_mask(mask, delta_c):
 
     npix = len(mask)
@@ -125,7 +131,7 @@ def T_T_Corr(pixel_indx, map1, map2):
     pix_indx_arr1 = hp.query_disc(Nside_map, vec_arr1, query_radius)
     lat, lon = hp.vec2ang(vec_arr1, lonlat=False)
 
-    for ipix in tqdm(xrange(1, len(pixel_indx))):
+    for ipix in xrange(1, len(pixel_indx)):
         x, y, z =  hp.pix2vec(Nside_ref, pixel_indx[ipix])
         vec_arr1 = np.array([x, y, z])
 
@@ -149,14 +155,14 @@ def T_T_Corr(pixel_indx, map1, map2):
     bmask_binary[bool_arr] = 0.0
     bmask[bool_arr] = hp.UNSEEN
 
-    fig = plt.figure(4, figsize=(8, 6))
+    fig = plt.figure(7, figsize=(8, 6))
     hp.mollview(bmask_binary, fig=fig.number, xsize=2000, unit='', nest=False, cmap=cmap1, title='Binary mask')
     hp.graticule()
 
-    plot_name = plot_Dirname+'region_%d_bmask_GNILC_nside256.pdf'%region_number
+    plot_name = plot_Dirname+'region_%d_bmask_GNILC-haslam_nside256_queryRadius_%0.1f.pdf'%(region_number, q_rad)
     plt.savefig(plot_name)
     
-    map_name = map_Dirname + 'region_%d_BinaryMask_GNILC_nside256.fits'%(region_number)
+    map_name = map_Dirname + 'region_%d_bmask_GNILC-haslam_nside256_queryRadius_%0.1f.fits'%(region_number, q_rad)
 
     hp.write_map(map_name, bmask_binary, overwrite=True)
 
@@ -203,32 +209,43 @@ def T_T_Corr(pixel_indx, map1, map2):
     
 
 def main(seq_name, masking):
-
-
+    
+    """
+    Here earlier we were using Component seperation maps like Commander
+    Which takes earlier templet map as prior like Haslam 408 MHz map 
+    as prior for Commander synchrotron map.
+    To see how noise behave instead of using Commander maps we are using 
+    actual data maps like GNILC for Dust and Haslam 408 MHz 2014 verion 
+    for Cross-Correlation. 
+    """
     # reading synchrotron and dust maps
-
+    
     #fits_filename = "../CMB_foreground_map/COM_CompMap_%s-commander_0256_R2.00.fits" % seq_name[0]
-
     fits_filename = "../CMB_foreground_map/COM_CompMap_%s-GNILC-F857_2048_R2.00.fits" % seq_name[0]
     map_1 = hp.read_map(fits_filename)
-    fits_filename = "../CMB_foreground_map/COM_CompMap_%s-commander_0256_R2.00.fits" % seq_name[1]
+    #fits_filename = "../CMB_foreground_map/COM_CompMap_%s-commander_0256_R2.00.fits" % seq_name[1]
+    fits_filename = "../CMB_foreground_map/haslam408_dsds_Remazeilles2014.fits" # Actual Haslam map Nside 512
     map_2 = hp.read_map(fits_filename)
     
 
-    map_1 = hp.ud_grade(map_1, 256)
-    map_1 = hp.sphtfunc.smoothing(map_1, fwhm=np.radians(60./60.))
+    map_1 = hp.ud_grade(map_1, 256)  # degrading GNILC Dust map to Nside 256
+    map_2 = hp.ud_grade(map_2, 256)  # degrading Haslam map to Nside 256
+
+    map_1 = hp.sphtfunc.smoothing(map_1, fwhm=np.radians(60./60.)) # smoothing Dust map to 1 degree
     map_2 = hp.sphtfunc.smoothing(map_2, fwhm=np.radians(60./60.))
     
-    rho_binary = np.zeros(hp.nside2npix(Nside_ref)) # Correlation Coefficient array
-    rho = np.zeros(hp.nside2npix(Nside_ref)) # Correlation Coefficient array
+
+    rho_binary = np.zeros(hp.nside2npix(Nside_ref)) # Correlation Coefficient array for binary masking
+    rho = np.zeros(hp.nside2npix(Nside_ref))        # Correlation Coefficient array for actual masking
 
     pixel_indx = np.arange(hp.nside2npix(Nside_ref)) # Nside_ref = 32 pixel index array
 
     for ipix in tqdm(xrange(hp.nside2npix(Nside_ref))):
         x, y, z =  hp.pix2vec(Nside_ref, ipix)
         vec = np.array([x, y, z])
-        rho_binary[ipix] = cross_corr(vec, map_1, map_2) # Compute Pearson cross-correlation coefficient
-        rho[ipix] = cross_corr(vec, map_1, map_2) # Compute Pearson cross-correlation coefficient
+        rho_binary[ipix] = cross_corr(vec, map_1, map_2)    # Compute Pearson cross-correlation coefficient
+        rho[ipix] = cross_corr(vec, map_1, map_2)           # Compute Pearson cross-correlation coefficient
+
 
     # Masking Galactic part
     if masking == True:
@@ -241,99 +258,113 @@ def main(seq_name, masking):
 
 
 #===================================================================
-
     # picking up pixel with correlation greater than 0.6
+
     indx = (rho < 0.6)
     indx1 = (rho >= 0.6)
     rho_binary[indx]  = 0.0
     rho_binary[indx1] = 1.0
+    rho[indx] = hp.UNSEEN
 
-    """
-
+     
     #plot regions with high correlation
     fig = plt.figure(1, figsize=(8, 6))
     hp.mollview(rho_binary, fig=fig.number, xsize=2000, unit=r'$\rho$', nest=False, 
-                title='Pearson Correlation map', cmap=cmap1)
+                title='Pearson Correlation binary map', cmap=cmap1)
     hp.graticule()
-    plot_name = plot_Dirname+'rho_galmask_30deg_map_nside32_nu_GE_0.6.pdf'
+    plot_name = plot_Dirname+'CrossCor_Haslam_GNILC_rho_binary_galmask_30deg_map_nside32_nu_GE_0.6_queryradius-%0.1f.pdf'%q_rad
     plt.savefig(plot_name, dpi=600)
 
     fig = plt.figure(2, figsize=(8, 6))
-    hp.mollview(map_1, fig=fig.number, xsize=2000, unit=r'$\rho$', nest=False, 
-                title='GNILC-Dust Map, Nside 256, smooth= 60arcmin', cmap=cmap1, norm='hist')
+    hp.mollview(hp.ma(rho), fig=fig.number, xsize=2000, unit=r'$\rho$', nest=False, 
+                title='Pearson Correlation', cmap=cmap1)
     hp.graticule()
-    plot_name = plot_Dirname+'GNILC-DustMap_Nside-256_smooth-60arcmin.pdf'
+    plot_name = plot_Dirname+'CrossCor_Haslam_GNILC_rho_galmask_30deg_map_nside32_queryradius-%0.1f.pdf'%q_rad
     plt.savefig(plot_name, dpi=600)
-
-    fig = plt.figure(3, figsize=(8, 6))
-    hp.mollview(map_2, fig=fig.number, xsize=2000, unit=r'$\rho$', nest=False, 
-                title='Synchrotron Map, Nside 256, smooth= 60arcmin', cmap=cmap1, norm='hist')
-    hp.graticule()
-    plot_name = plot_Dirname+'Synchrotron_Nside-256_smooth-60arcmin.pdf'
-    plt.savefig(plot_name, dpi=600)
-    """
-
+    
 
 #===================================================================
 # out of 11 regions picking up one
-#region 2
-
+#region 7
     lat, lon = hp.pix2ang(Nside_ref, pixel_indx, lonlat=False)
     region1_binary = rho_binary
-    
-    gal_mask = (np.rad2deg(lat) < 150)
+
+    gal_mask = (np.rad2deg(lat) < 116)
     region1_binary[gal_mask] = 0.0
     rho[gal_mask] = hp.UNSEEN
 
-#    gal_mask = (np.rad2deg(lat) >= 150)
-#    region1_binary[gal_mask] = 0.0
-#    rho[gal_mask] = hp.UNSEEN
-
-    gal_mask = (np.rad2deg(lon) < 260)
+    gal_mask = (np.rad2deg(lat) > 140)
     region1_binary[gal_mask] = 0.0
     rho[gal_mask] = hp.UNSEEN
 
-#    gal_mask = (np.rad2deg(lon) < 255)
-#    region1_binary[gal_mask] = 0.0
-#    rho[gal_mask] = hp.UNSEEN
+    gal_mask = (np.rad2deg(lon) > 300)
+    region1_binary[gal_mask] = 0.0
+    rho[gal_mask] = hp.UNSEEN
+
+    gal_mask = (np.rad2deg(lon) < 240)
+    region1_binary[gal_mask] = 0.0
+    rho[gal_mask] = hp.UNSEEN
 
     gal_mask = (rho < 0.6)
     rho[gal_mask] = hp.UNSEEN
 
-
 #===================================================================
 
     #plotting region 
-    fig = plt.figure(2, figsize=(8, 6))
-    hp.mollview(region1_binary, fig=fig.number, xsize=2000, unit=r'$\rho$', nest=False, cmap=cmap1)
-    hp.graticule()
-
-    plot_name = plot_Dirname+'region_%d_nside32_nu_GE_0.6_binary.pdf'%region_number
-    plt.savefig(plot_name, dpi=200)
 
     fig = plt.figure(3, figsize=(8, 6))
-    hp.mollview(hp.ma(rho), fig=fig.number, xsize=2000, unit=r'$\rho$', nest=False, cmap=cmap1)
+    hp.mollview(region1_binary, fig=fig.number, xsize=2000, unit=r'$\rho$', 
+                    nest=False, cmap=cmap1, title='region-%d'%region_number)
     hp.graticule()
-    plot_name = plot_Dirname+'region_%d_nside32_nu_GE_0.6.pdf'%region_number
+
+    plot_name = plot_Dirname+'region_%d_nside32_nu_GE_0.6_binary_queryRadius_%0.1f.pdf'%(region_number, q_rad)
     plt.savefig(plot_name, dpi=200)
 
+    fig = plt.figure(4, figsize=(8, 6))
+    hp.mollview(hp.ma(rho), fig=fig.number, xsize=2000, unit=r'$\rho$', 
+                nest=False, cmap=cmap1, title='region-%d'%region_number)
+    hp.graticule()
+    plot_name = plot_Dirname+'region_%d_nside32_nu_GE_0.6_queryRadius_%0.1f.pdf'%(region_number, q_rad)
+    plt.savefig(plot_name, dpi=200)
     indx1 = (region1_binary == 1)
     pixel_indx = pixel_indx[indx1]
 
-    #fits_filename = "../CMB_foreground_map/COM_CompMap_%s-commander_0256_R2.00.fits" % seq_name[0]
 
+#++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     fits_filename = "../CMB_foreground_map/COM_CompMap_%s-GNILC-F857_2048_R2.00.fits" % seq_name[0]
-    map_1 = hp.read_map(fits_filename, verbose=False)
+    map_1 = hp.read_map(fits_filename)
+    #fits_filename = "../CMB_foreground_map/COM_CompMap_%s-commander_0256_R2.00.fits" % seq_name[1]
+    fits_filename = "../CMB_foreground_map/haslam408_dsds_Remazeilles2014.fits" # Actual Haslam map Nside 512
+    map_2 = hp.read_map(fits_filename)
     
-    fits_filename = "../CMB_foreground_map/COM_CompMap_%s-commander_0256_R2.00.fits" % seq_name[1]
-    map_2 = hp.read_map(fits_filename, verbose=False)
-    
-    map_1 = hp.ud_grade(map_1, 256)
-    map_1 = hp.sphtfunc.smoothing(map_1, fwhm=np.radians(60./60.))
+
+    map_1 = hp.ud_grade(map_1, 256)  # degrading GNILC Dust map to Nside 256
+    map_2 = hp.ud_grade(map_2, 256)  # degrading Haslam map to Nside 256
+
+    map_1 = hp.sphtfunc.smoothing(map_1, fwhm=np.radians(60./60.)) # smoothing Dust map to 1 degree
     map_2 = hp.sphtfunc.smoothing(map_2, fwhm=np.radians(60./60.))
+    
+#++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    """
+    fig = plt.figure(5, figsize=(8, 6))
+    hp.mollview(map_1, fig=fig.number, xsize=2000, norm='hist', unit=r'T($\mu K$)', 
+                                        nest=False, cmap=cmap1, title='Dust-GNILC')
+    hp.graticule()
+    #plot_name = 'COM_CompMap_Dust-GNILC-F857_256_apod60arcmin_R2.00.pdf'
+    plot_name = plot_Dirname+'GNILC-DustMap_Nside-256_smooth-60arcmin.pdf'
+    plt.savefig(plot_name, dpi=200)
+
+    fig = plt.figure(6, figsize=(8, 6))
+    hp.mollview(map_2, fig=fig.number, xsize=2000,norm='hist',  unit=r'T($\mu K$)', 
+                                        nest=False, cmap=cmap1, title='Synchrotron')
+    hp.graticule()
+    #plot_name = ' COM_CompMap_Synchrotron-commander_0256_apod_60arcmin_R2.00.pdf'
+    plot_name = plot_Dirname+'Synchrotron_Nside-256_smooth-60arcmin.pdf'
+    plt.savefig(plot_name, dpi=200)
+    """
+#++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
     # Go back to foreground maps and take out correlated regions and also create binary mask
-
     T_T_Corr(pixel_indx, map_1, map_2)
 
 
@@ -344,7 +375,6 @@ if __name__ == "__main__":
     seq = [name1, name2]
     main(seq, True)
 
-plt.show()
 
 
 
