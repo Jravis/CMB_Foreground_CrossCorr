@@ -65,13 +65,13 @@ query_radius = np.deg2rad(q_rad)
 Npix_map = hp.nside2npix(Nside_map)
 Npix_ref = hp.nside2npix(Nside_ref)
 
-region_number = 1
+region_number = 10
 
 #plot_Dirname= '/home/tolstoy/Documents/CMB_dust_sync_Cross_Corr/plots/regions/region_%d/'%(region_number)
-plot_Dirname= '/home/tolstoy/Documents/CMB_dust_sync_Cross_Corr/plots/'
+plot_Dirname= '/home/tolstoy/Documents/CMB_dust_sync_Cross_Corr/results/regions/GNILC-Haslam_region_query_rad_5.0deg/'
 
 #map_Dirname = '/home/tolstoy/Documents/CMB_dust_sync_Cross_Corr/results/regions/region_%d/'%(region_number)
-map_Dirname = '/home/tolstoy/Documents/CMB_dust_sync_Cross_Corr/results/regions/GNILC_Binary_mask'
+map_Dirname = '/home/tolstoy/Documents/CMB_dust_sync_Cross_Corr/results/regions/GNILC-Haslam_region_query_rad_5.0deg/'
 
 plt.style.use("classic")
 
@@ -281,30 +281,29 @@ def main(seq_name, masking):
 
 #===================================================================
 # out of 11 regions picking up one
-#region 1
+#region 10
+
     lat, lon = hp.pix2ang(Nside_ref, pixel_indx, lonlat=False)
     region1_binary = rho_binary
-        
-#    gal_mask = (np.rad2deg(lat) < 116)
+    
+    gal_mask = (np.rad2deg(lat) < 140)
+    region1_binary[gal_mask] = 0.0
+    rho[gal_mask] = hp.UNSEEN
+
+#    gal_mask = (np.rad2deg(lat) >= 60)
 #    region1_binary[gal_mask] = 0.0
 #    rho[gal_mask] = hp.UNSEEN
 
-    gal_mask = (np.rad2deg(lat) >= 60)
+    gal_mask = (np.rad2deg(lon) > 300)
     region1_binary[gal_mask] = 0.0
     rho[gal_mask] = hp.UNSEEN
 
-    gal_mask = (np.rad2deg(lon) > 62)
+    gal_mask = (np.rad2deg(lon) < 230)
     region1_binary[gal_mask] = 0.0
     rho[gal_mask] = hp.UNSEEN
-
-    gal_mask = (np.rad2deg(lon) < 29)
-    region1_binary[gal_mask] = 0.0
-    rho[gal_mask] = hp.UNSEEN
-
 
     gal_mask = (rho < 0.6)
     rho[gal_mask] = hp.UNSEEN
-
 
 
 #===================================================================
