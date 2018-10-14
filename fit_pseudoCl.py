@@ -19,8 +19,8 @@ colombi1_cmap.set_bad("gray")
 colombi1_cmap.set_under("white")
 cmap1 = colombi1_cmap
 
-Dir_name = '/jbodstorage/data_sandeep/sandeep/cross-corr_data/nu_GE_0.8_ns256_dns8_qrad_10deg/'
-pixels = np.genfromtxt(Dir_name+'PseudoCl_nu_GE_0.8_ns256_dns8_qrad_10deg_pixel_index.txt',usecols=0)
+Dir_name = '/jbodstorage/data_sandeep/sandeep/cross-corr_data/nu_GE_0.8_ns256_dns8_qrad_8deg/'
+pixels = np.genfromtxt(Dir_name+'PseudoCl_nu_GE_0.8_ns256_dns8_qrad_8deg_pixel_index.txt',usecols=0)
 delta_ell = 12
 #b = nmt.NmtBin(256, nlb=delta_ell)
 #ell_arr_bin = b.get_effective_ells()
@@ -74,13 +74,13 @@ def best_fit(data):
 
 def mask_plot():
     
-    map_2 = hp.read_map(Dir_name+'bmask_nu_GE_0.8_ns256_dns8_qrad_10deg'\
+    map_2 = hp.read_map(Dir_name+'bmask_nu_GE_0.8_ns256_dns8_qrad_8deg'\
                                             '_delta_ell%d_pixindx_%d.fits'% 
                                     (delta_ell, pixels[ipix]), verbose=False)
     fig = plt.figure(1, figsize=(8, 6))
     hp.mollview(map_2, fig=fig.number, xsize=2000,norm='hist',  unit='', 
                                         nest=False, cmap=cmap1, title='CPix-%d'%pixels[ipix])
-    plt.savefig(Dir_name+'bmask_nu_GE_0.8_ns256_dns8_qrad_10deg'\
+    plt.savefig(Dir_name+'bmask_nu_GE_0.8_ns256_dns8_qrad_8deg'\
                         '_delta_ell%d_pixindx_%d.pdf'% (delta_ell, pixels[ipix]))
     plt.close()
 
@@ -90,11 +90,11 @@ def main():
     
     #mask_plot()
     #gmodel = Model(Plaw)
-
-    for ipix in tqdm(xrange(len(pixels))):
+    
+    for ipix in tqdm(xrange(0, 1)):#len(pixels))):
 
         fname1 = Dir_name+'PseudoCl_nu_GE_0.8_ns256_dns8'\
-                          '_qrad_10deg_delta_ell%d_pixindx_%d.txt'%(delta_ell, pixels[ipix])
+                          '_qrad_8deg_delta_ell%d_pixindx_%d.txt'%(delta_ell, pixels[ipix])
 
         ell_arr_bin = np.genfromtxt(fname1, usecols=0)
         cl_dust     = np.genfromtxt(fname1, usecols=1)
@@ -102,12 +102,14 @@ def main():
         err_dust    = np.genfromtxt(fname1, usecols=3)
         err_sync    = np.genfromtxt(fname1, usecols=4)
 
+
+
         index = (ell_arr_bin>=40) * (ell_arr_bin<=160)*(cl_sync>0)
 
         ell_arr_bin =  ell_arr_bin[index] 
- #       cl_dust     =  cl_dust [index] 
+        #cl_dust     =  cl_dust [index] 
         cl_sync     =  cl_sync[index] 
- #       err_dust    =  err_dust[index] 
+        #err_dust    =  err_dust[index] 
         err_sync    =  err_sync[index] 
        
         Data = np.zeros((3, len(ell_arr_bin)), dtype=np.float64)
@@ -115,9 +117,12 @@ def main():
         factor = ell_arr_bin*(ell_arr_bin+1)/2./np.pi
 
         Data[0,:] = (ell_arr_bin)
-        Data[1,:] = ( factor*cl_sync)
-        Data[2,:] = (factor*err_sync)
+        #Data[1,:] = ( factor*cl_sync)
+        #Data[2,:] = (factor*err_sync)
+        Data[1,:] = ( cl_sync)
+        Data[2,:] = (err_sync)
     
+
         Amp, Amp_err, kk, kk_err = best_fit(Data)
         
         fig = plt.figure(ipix+1, figsize=(8, 6.5))
@@ -125,12 +130,16 @@ def main():
         ax1 = plt.subplot(gs[0, 0])
 
         ax1.errorbar(Data[0,:], Data[1,:], yerr=Data[2,:], marker='o', 
-                    mfc='none', markersize=9, mew=2,mec='teal', 
-                    ecolor='teal',elinewidth=1.5, capsize=1, 
-                    color='teal', label=r'$Sync$', linestyle='')#, alpha=0.7)
+                    mfc='none', markersize=9, mew=2,mec='b', 
+                    ecolor='b',elinewidth=1.5, capsize=1, 
+                    color='b', label=r'$Dust$', linestyle='', alpha=0.7)
 
-        ax1.plot(Data[0,:], Amp*Data[0,:]**(-kk), color='peru', linestyle='--', 
+        ax1.plot(Data[0,:], Amp*Data[0,:]**(-kk), color='r', linestyle='--', 
                     linewidth=2, label=r'$index(k) = %0.3f\pm%0.3f$'%(kk, kk_err) )
+
+        ax1.plot(ell_arr_bin, cl_sync, color='g', linestyle='--', 
+                    linewidth=2, label=r'$index(k) = %0.3f\pm%0.3f$'%(kk, kk_err) )
+
 
         ax1.set_xscale('log')
         ax1.set_yscale('log')
@@ -153,13 +162,13 @@ def main():
 #        plt.savefig(Dir_name+'plots/Dust_GE_0.8_ns256_dns8_qrad_10deg'\
 #                        '_delta_ell%d_pixindx_%d.pdf'% (delta_ell, pixels[ipix]))
 
-        plt.savefig(Dir_name+'plots/Sync_GE_0.8_ns256_dns8_qrad_10deg'\
+        plt.savefig(Dir_name+'plots/Dust_GE_0.8_ns256_dns8_qrad_8deg'\
                         '_delta_ell%d_pixindx_%d.pdf'% (delta_ell, pixels[ipix]))
         
-        plt.close()
-
+        plt.show()
+        #plt.close()
+        
 
 if __name__ == "__main__":
     main()
-#plt.show()
 

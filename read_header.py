@@ -6,7 +6,7 @@ import matplotlib as mpl
 
 from matplotlib.colors import ListedColormap
 mpl.rcParams['axes.linewidth'] = 1.5
-colombi1_cmap = ListedColormap(np.loadtxt("../Planck_Parchment_RGB.txt")/255.)
+colombi1_cmap = ListedColormap(np.loadtxt("Planck_Parchment_RGB.txt")/255.)
 colombi1_cmap.set_bad("gray")
 colombi1_cmap.set_under("white")
 cmap1 = colombi1_cmap
@@ -49,29 +49,28 @@ def apodize_mask(mask, delta_c):
 
 print hp.nside2resol(256,arcmin=True)
 
-fits_filename = 'lambda_chipass_healpix_r10.fits'
+#fits_filename = 'lambda_chipass_healpix_r10.fits'
+fits_filename = '../maps/COM_CompMap_QU-synchrotron-commander_2048_R3.00_hm1.fits'
 hdul = fits.open(fits_filename)
 hdul.info()
 print '========================'
 print repr(hdul[1].header)
 
-print '========================'
-chipass = (hp.read_map(fits_filename))
-chipass_mask = np.ones(len(chipass), dtype=np.float64) 
 
+map_Q = hp.read_map(fits_filename, field=0)
+map_U = hp.read_map(fits_filename, field=1)
+hp.mollview(map_Q, coord=['G'], cmap=cmap1, norm='hist', title='Pol-Q')
+hp.mollview(map_U, coord=['G'], cmap=cmap1, norm='hist', title='Pol-U')
+
+
+fits_filename = '../maps/lambda_chipass_healpix_r10.fits'
+chipass = hp.read_map(fits_filename, field=0)
 index = (chipass <0)
 chipass[index] = hp.UNSEEN
-chipass_mask[index] = 0.00
-maa = hp.ma(chipass)
 
+hp.mollview(hp.ma(chipass), coord=['G'], cmap=cmap1, norm='hist')
 
-chipass_mask = apodize_mask(chipass_mask, 2.)
-
-
-hp.mollview(maa, coord=['G'], cmap=cmap1)
-hp.mollview(chipass_mask, coord=['G'], cmap=cmap1)
 plt.show()
-
 
 
 

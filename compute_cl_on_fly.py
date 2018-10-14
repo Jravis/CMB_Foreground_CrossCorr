@@ -60,7 +60,7 @@ cmap1 = colombi1_cmap
 Nside_map = 256
 Nside_ref = 8
 #query_radius = hp.nside2resol(Nside_ref, arcmin=False)
-query_radius = np.deg2rad(10.0)
+query_radius = np.deg2rad(8.0)
 plt.style.use("classic")
 
 
@@ -135,7 +135,6 @@ def main(seq_name, masking):
     theta, phi =hp.pixelfunc.pix2ang(Nside_ref, pixel_indx_ref, nest=False, lonlat=False)
     ipixl = hp.pixelfunc.ang2pix(Nside_map, theta, phi, nest=False, lonlat=False)
  
-
     min_lat = 70.0
     max_lat = 110.0
     lat, lon = hp.pix2ang(Nside_map, pixel_indx_map, lonlat=False)
@@ -162,20 +161,20 @@ def main(seq_name, masking):
             cl_dust, err_dust, mask_apod = compute_cl(mask, map_1)
             cl_sync, err_sync, mask_apod  = compute_cl(mask, map_2)
 
-            fname1 = '/jbodstorage/data_sandeep/sandeep/cross-corr_data/nu_GE_0.8_ns256_dns8_qrad_10deg/'\
-                     'PseudoCl_nu_GE_0.8_ns256_dns8_qrad_10deg_delta_ell%d_pixindx_%d.txt'% (delta_ell, ipix)
+            fname1 = '/jbodstorage/data_sandeep/sandeep/cross-corr_data/nu_GE_0.8_ns256_dns8_qrad_8deg/'\
+                     'PseudoCl_nu_GE_0.8_ns256_dns8_qrad_8deg_delta_ell%d_pixindx_%d.txt'% (delta_ell, ipix)
             np.savetxt(fname1, zip(ell_arr_bin, cl_dust, cl_sync, err_dust, err_sync), 
                             delimiter='\t', header="ell_bin\tCl_dust\tCl_sync\tCerr_dust\tCerr_sync")
 
-            hp.write_map('/jbodstorage/data_sandeep/sandeep/cross-corr_data/nu_GE_0.8_ns256_dns8_qrad_10deg/'\
-                        'bmask_nu_GE_0.8_ns256_dns8_qrad_10deg_delta_ell%d_pixindx_%d.fits'% (delta_ell, ipix),
+            hp.write_map('/jbodstorage/data_sandeep/sandeep/cross-corr_data/nu_GE_0.8_ns256_dns8_qrad_8deg/'\
+                        'mask_dir/bmask_nu_GE_0.8_ns256_dns8_qrad_8deg_delta_ell%d_pixindx_%d.fits'% (delta_ell, ipix),
                          mask,coord='G',overwrite='True')
 
         mask  = np.zeros(hp.nside2npix(Nside_map))  
 
     selected_pixel = np.asarray(selected_pixel)
-    np.savetxt('/jbodstorage/data_sandeep/sandeep/cross-corr_data/nu_GE_0.8_ns256_dns8_qrad_10deg/'\
-               'PseudoCl_nu_GE_0.8_ns256_dns8_qrad_10deg_pixel_index.txt', selected_pixel, fmt='%d')
+    np.savetxt('/jbodstorage/data_sandeep/sandeep/cross-corr_data/nu_GE_0.8_ns256_dns8_qrad_8deg/'\
+               'PseudoCl_nu_GE_0.8_ns256_dns8_qrad_8deg_pixel_index.txt', selected_pixel, fmt='%d')
 
 #Initialize binning scheme with 4 ells per bandpower
 #beam = hp.gauss_beam(np.radians(60.0/60.0), lmax=3*Nside-1)
